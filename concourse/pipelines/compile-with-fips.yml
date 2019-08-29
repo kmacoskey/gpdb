@@ -1,0 +1,450 @@
+resource_types:
+- name: terraform
+  type: docker-image
+  source:
+    repository: ljfranklin/terraform-resource
+    tag: 0.11.14
+- name: gcs
+  type: docker-image
+  source:
+    repository: frodenas/gcs-resource
+
+resources:
+- name: gpdb7_fips_src
+  type: git
+  source:
+    # branch: "pgcrypto_fips"
+    # uri: https://github.com/danielgustafsson/gpdb.git
+    # Using a fork of Daniel's PR in order to create a pipeline
+    branch: "pgcrypto_fips_kris"
+    uri: https://github.com/kmacoskey/gpdb
+
+- name: gpdb6_fips_src
+  type: git
+  source:
+    # branch: "6x_pgcrypto_fips"
+    # uri: https://github.com/danielgustafsson/gpdb.git
+    # Using a fork of Daniel's PR in order to make it buildable
+    branch: "6x_pgcrypto_fips_kris"
+    uri: https://github.com/kmacoskey/gpdb
+
+- name: gpdb5_fips_src
+  type: git
+  source:
+    # branch: "5x_pgcrypto_fips"
+    # uri: https://github.com/danielgustafsson/gpdb.git
+    # Using a fork of Daniel's PR in order to make it buildable
+    branch: "5x_pgcrypto_fips_kris"
+    uri: https://github.com/kmacoskey/gpdb
+
+- name: bin_gpdb7_centos6_fips
+  type: gcs
+  source:
+    bucket: "pivotal-gpdb-concourse-resources-intermediates-dev"
+    json_key: ((concourse-gcs-resources-service-account-key))
+    versioned_file: ((pipeline-name))/bin_gpdb_centos6/bin_gpdb.tar.gz
+
+- name: bin_gpdb6_centos6_fips
+  type: gcs
+  source:
+    bucket: "pivotal-gpdb-concourse-resources-intermediates-dev"
+    json_key: ((concourse-gcs-resources-service-account-key))
+    versioned_file: ((pipeline-name))/bin_gpdb_centos6/bin_gpdb.tar.gz
+
+- name: bin_gpdb5_centos6_fips
+  type: gcs
+  source:
+    bucket: "pivotal-gpdb-concourse-resources-intermediates-dev"
+    json_key: ((concourse-gcs-resources-service-account-key))
+    versioned_file: ((pipeline-name))/bin_gpdb_centos6/bin_gpdb.tar.gz
+
+# - name: bin_gpdb7_centos6
+  # type: gcs
+  # source:
+    # bucket: "pivotal-gpdb-concourse-resources-prod"
+    # json_key: ((concourse-gcs-resources-service-account-key))
+    # regexp: server/published/master/server-rc-(.*)-rhel6_x86_64.debug.tar.gz
+
+# - name: bin_gpdb5_centos6
+  # type: s3
+  # source:
+    # access_key_id: {{bucket-access-key-id}}
+    # bucket: {{gpdb-stable-builds-bucket-name}}
+    # region_name: {{aws-region}}
+    # secret_access_key: {{bucket-secret-access-key}}
+    # versioned_file: release_candidates/bin_gpdb_centos6/gpdb5/bin_gpdb.tar.gz
+
+- name: gpaddon_src
+  type: git
+  source:
+    branch: "5X_STABLE"
+    private_key: {{gpaddon-git-key}}
+    uri: {{gpaddon-git-remote}}
+
+- name: ccp_src
+  type: git
+  source:
+    branch: "fips"
+    private_key: {{ccp-git-key}}
+    uri: {{ccp-git-remote}}
+
+- name: ccp-image
+  type: docker-image
+  source:
+    repository: pivotaldata/ccp
+    tag: '7'
+
+- name: libquicklz-centos6
+  type: gcs
+  source:
+    bucket: gp-internal-artifacts
+    json_key: ((gcs-key))
+    versioned_file: centos6/libquicklz-1.5.0-1.el6.x86_64.rpm
+
+- name: libquicklz-devel-centos6
+  type: gcs
+  source:
+    bucket: gp-internal-artifacts
+    json_key: ((gcs-key))
+    versioned_file: centos6/libquicklz-devel-1.5.0-1.el6.x86_64.rpm
+
+- name: libsigar-centos6
+  type: gcs
+  source:
+    bucket: gp-internal-artifacts
+    json_key: ((gcs-key))
+    versioned_file: centos6/sigar-rhel6_x86_64-1.6.5.targz
+
+- name: python-centos6
+  type: gcs
+  source:
+    bucket: gp-internal-artifacts
+    json_key: ((gcs-key))
+    versioned_file: centos6/python-2.7.12.tar.gz
+
+# - name: openssl-fips
+  # type: s3
+  # source:
+    # bucket: "toolsmiths-concourse-artifacts"
+    # # versioned_file: "gpdb-ext-release-local/OpenSSL/openssl/1.0.2l/targzs/openssl-rhel6_x86_64-1.0.2l.targz"
+    # versioned_file: "gpdb-ext-release-local/OpenSSL/openssl/1.0.2l/tar_dot_gzs/openssl-rhel6_x86_64-1.0.2l.tar.gz"
+    # access_key_id: {{artifact-bucket-access-key-id}}
+    # region_name: {{aws-region}}
+    # secret_access_key: {{artifact-bucket-secret-access-key}}
+
+- name: gpdb6-centos6-build
+  type: docker-image
+  source:
+    repository: pivotaldata/gpdb6-centos6-build
+    tag: latest
+
+- name: centos-gpdb-dev-6
+  type: docker-image
+  source:
+    repository: pivotaldata/centos-gpdb-dev
+    tag: '6-gcc6.2-llvm3.7'
+
+- name: terraform
+  type: terraform
+  source:
+    env:
+      AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+      AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      GOOGLE_CREDENTIALS: {{google-service-account-key}}
+    vars:
+      project_id: {{google-project-id}}
+    storage:
+      access_key_id: {{tf-machine-access-key-id}}
+      secret_access_key: {{tf-machine-secret-access-key}}
+      region_name: {{aws-region}}
+      # This is not parameterized, on purpose. All tfstates will go to this spot,
+      # and different teams will place there clusters' tfstate files under different paths
+      bucket: gpdb5-pipeline-dynamic-terraform
+      bucket_path: clusters-google/
+
+anchors:
+- &set_failed
+  do:
+  - task: on_failure_set_failed
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: pivotaldata/ccp
+          tag: "7"
+      inputs:
+        - name: ccp_src
+        - name: terraform
+      run:
+        path: 'ccp_src/google/ccp_failed_test.sh'
+      params:
+        GOOGLE_CREDENTIALS: {{google-service-account-key}}
+        GOOGLE_PROJECT_ID: {{google-project-id}}
+        GOOGLE_ZONE: {{google-zone}}
+        GOOGLE_SERVICE_ACCOUNT: {{google-service-account}}
+        AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+        AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+        AWS_DEFAULT_REGION: {{tf-machine-region}}
+        BUCKET_PATH: clusters-google/
+        BUCKET_NAME: {{tf-bucket-name}}
+
+jobs:
+
+- name: compile_gpdb7_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb7_fips_src
+    - get: gpdb6-centos6-build
+    - get: libquicklz-installer
+      resource: libquicklz-centos6
+    - get: libquicklz-devel-installer
+      resource: libquicklz-devel-centos6
+    - get: libsigar-installer
+      resource: libsigar-centos6
+    - get: python-tarball
+      resource: python-centos6
+    # - get: openssl-fips
+      # params:
+        # unpack: true
+  - task: compile_gpdb
+    image: gpdb6-centos6-build
+    config:
+      platform: linux
+      inputs:
+        - name: gpdb_src
+        - name: libquicklz-installer
+        - name: libquicklz-devel-installer
+        - name: libsigar-installer
+        - name: python-tarball
+        # - name: openssl-fips
+      outputs:
+        - name: gpdb_artifacts
+      run:
+        path: gpdb_src/concourse/scripts/compile_gpdb.bash
+      params:
+        OUTPUT_ARTIFACT_DIR: gpdb_artifacts
+        ORCA_TAG: v3.65.0
+        CONFIGURE_FLAGS: "--enable-cassert --enable-debug-extensions"
+        TARGET_OS: centos
+        TARGET_OS_VERSION: 6
+        BLD_TARGETS: ""
+  - aggregate:
+    - put: bin_gpdb7_centos6_fips
+      params:
+        file: gpdb_artifacts/bin_gpdb.tar.gz
+
+- name: compile_gpdb6_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb6_fips_src
+    - get: gpdb6-centos6-build
+    - get: libquicklz-installer
+      resource: libquicklz-centos6
+    - get: libquicklz-devel-installer
+      resource: libquicklz-devel-centos6
+    - get: libsigar-installer
+      resource: libsigar-centos6
+    - get: python-tarball
+      resource: python-centos6
+  - task: compile_gpdb
+    image: gpdb6-centos6-build
+    config:
+      platform: linux
+      inputs:
+        - name: gpdb_src
+        - name: libquicklz-installer
+        - name: libquicklz-devel-installer
+        - name: libsigar-installer
+        - name: python-tarball
+      outputs:
+        - name: gpdb_artifacts
+      run:
+        path: gpdb_src/concourse/scripts/compile_gpdb.bash
+      params:
+        OUTPUT_ARTIFACT_DIR: gpdb_artifacts
+        ORCA_TAG: v3.65.0
+        CONFIGURE_FLAGS: "--enable-cassert --enable-debug-extensions"
+        TARGET_OS: centos
+        TARGET_OS_VERSION: 6
+        BLD_TARGETS: ""
+  - aggregate:
+    - put: bin_gpdb6_centos6_fips
+      params:
+        file: gpdb_artifacts/bin_gpdb.tar.gz
+
+- name: compile_gpdb5_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb5_fips_src
+    - get: gpaddon_src
+    - get: centos-gpdb-dev-6
+  - task: sync_tools
+    file: gpdb_src/concourse/tasks/sync_tools.yml
+    image: centos-gpdb-dev-6
+    params:
+      IVYREPO_HOST: {{ivyrepo_host}}
+      IVYREPO_REALM: {{ivyrepo_realm}}
+      IVYREPO_USER: {{ivyrepo_user}}
+      IVYREPO_PASSWD: {{ivyrepo_passwd}}
+      TARGET_OS: centos
+      TARGET_OS_VERSION: 6
+      TASK_OS: centos
+      TASK_OS_VERSION: 6
+  - task: compile_gpdb
+    file: gpdb_src/concourse/tasks/compile_gpdb.yml
+    image: centos-gpdb-dev-6
+    params:
+      CONFIGURE_FLAGS: "--enable-cassert"
+      TARGET_OS: centos
+      TARGET_OS_VERSION: 6
+      BLD_TARGETS: "clients loaders"
+  - aggregate:
+    - put: bin_gpdb5_centos6_fips
+      params:
+        file: gpdb_artifacts/bin_gpdb.tar.gz
+
+- name: test_gpdb7_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb7_fips_src
+      passed:
+        - compile_gpdb7_centos6_fips
+    - get: gpdb_binary
+      resource: bin_gpdb7_centos6_fips
+      passed:
+        - compile_gpdb7_centos6_fips
+    - get: ccp_src
+    - get: ccp-image
+  - put: terraform
+    params:
+      action: create
+      delete_on_failure: true
+      generate_random_name: true
+      terraform_source: ccp_src/google/
+      vars:
+        PLATFORM: "centos6-fips"
+        instance_type: n1-standard-2
+  - task: gen_cluster
+    file: ccp_src/ci/tasks/gen_cluster.yml
+    params:
+      AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+      AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      AWS_DEFAULT_REGION: {{aws-region}}
+      BUCKET_PATH: clusters-google/
+      BUCKET_NAME: {{tf-bucket-name}}
+      CLOUD_PROVIDER: google
+  - task: gpinitsystem
+    file: ccp_src/ci/tasks/gpinitsystem.yml
+  - task: run_noop
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine
+          tag: latest
+      run:
+        path: 'sh'
+        args: ['-c', 'exit 1']
+  ensure:
+    <<: *set_failed
+
+- name: test_gpdb6_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb6_fips_src
+      passed:
+        - compile_gpdb6_centos6_fips
+    - get: gpdb_binary
+      resource: bin_gpdb6_centos6_fips
+      passed:
+        - compile_gpdb6_centos6_fips
+    - get: ccp_src
+    - get: ccp-image
+  - put: terraform
+    params:
+      action: create
+      delete_on_failure: true
+      generate_random_name: true
+      terraform_source: ccp_src/google/
+      vars:
+        PLATFORM: "centos6-fips"
+        instance_type: n1-standard-2
+  - task: gen_cluster
+    file: ccp_src/ci/tasks/gen_cluster.yml
+    params:
+      AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+      AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      AWS_DEFAULT_REGION: {{aws-region}}
+      BUCKET_PATH: clusters-google/
+      BUCKET_NAME: {{tf-bucket-name}}
+      CLOUD_PROVIDER: google
+  - task: gpinitsystem
+    file: ccp_src/ci/tasks/gpinitsystem.yml
+  - task: run_noop
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine
+          tag: latest
+      run:
+        path: 'sh'
+        args: ['-c', 'exit 1']
+  ensure:
+    <<: *set_failed
+
+- name: test_gpdb5_centos6_fips
+  plan:
+  - aggregate:
+    - get: gpdb_src
+      resource: gpdb5_fips_src
+      passed:
+        - compile_gpdb5_centos6_fips
+    - get: gpdb_binary
+      resource: bin_gpdb5_centos6_fips
+      passed:
+        - compile_gpdb5_centos6_fips
+    - get: ccp_src
+    - get: ccp-image
+  - put: terraform
+    params:
+      action: create
+      delete_on_failure: true
+      generate_random_name: true
+      terraform_source: ccp_src/google/
+      vars:
+        PLATFORM: "centos6-fips"
+        instance_type: n1-standard-2
+  - task: gen_cluster
+    file: ccp_src/ci/tasks/gen_cluster.yml
+    params:
+      AWS_ACCESS_KEY_ID: {{tf-machine-access-key-id}}
+      AWS_SECRET_ACCESS_KEY: {{tf-machine-secret-access-key}}
+      AWS_DEFAULT_REGION: {{aws-region}}
+      BUCKET_PATH: clusters-google/
+      BUCKET_NAME: {{tf-bucket-name}}
+      CLOUD_PROVIDER: google
+  - task: gpinitsystem
+    file: ccp_src/ci/tasks/gpinitsystem.yml
+  - task: run_noop
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: alpine
+          tag: latest
+      run:
+        path: 'sh'
+        args: ['-c', 'exit 1']
+  ensure:
+    <<: *set_failed
+
