@@ -434,6 +434,8 @@ jobs:
       CLOUD_PROVIDER: google
   - task: gpinitsystem
     file: ccp_src/ci/tasks/gpinitsystem.yml
+  - task: test_fips
+    file: gpdb_src/concourse/tasks/test_fips.yml
   - task: run_noop
     config:
       platform: linux
